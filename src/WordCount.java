@@ -1,3 +1,7 @@
+//J.T. Liso and Sean Whalen
+//COSC 560 Programming Assignment 2
+//Code template from https://hadoop.apache.org/docs/stable/hadoop-mapreduce-client/hadoop-mapreduce-client-core/MapReduceTutorial.html 
+
 import java.io.IOException;
 import java.util.StringTokenizer;
 
@@ -13,8 +17,7 @@ import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 
 public class WordCount {
 
-  public static class TokenizerMapper
-       extends Mapper<Object, Text, Text, IntWritable>{
+  public static class TokenizerMapper extends Mapper<Object, Text, Text, IntWritable>{
 
     private final static IntWritable one = new IntWritable(1);
     private Text word = new Text();
@@ -37,8 +40,7 @@ public class WordCount {
     }
   }
 
-  public static class IntSumReducer
-       extends Reducer<Text,IntWritable,Text,IntWritable> {
+  public static class IntSumReducer extends Reducer<Text,IntWritable,Text,IntWritable> {
     private IntWritable result = new IntWritable();
 
     //reducer function for combining the counts
@@ -46,11 +48,16 @@ public class WordCount {
 
       //summing the counts of each word
       int sum = 0;
+
+      //iterating through the mapped keys
       for (IntWritable val : values) {
         sum += val.get();
       }
       result.set(sum);
-      context.write(key, result);
+
+      //checking if sum is greater than stop word threshold, writing the word if so
+      if(sum >= 1000 )
+        context.write(key, result);
     }
   }
 
@@ -63,7 +70,7 @@ public class WordCount {
     job.setReducerClass(IntSumReducer.class);
     job.setOutputKeyClass(Text.class);
     job.setOutputValueClass(IntWritable.class);
-    job.setJar("wc.jar");
+    job.setJar("wc.jar"); //jar file must be called wc.jar
     FileInputFormat.addInputPath(job, new Path(args[0]));
     FileOutputFormat.setOutputPath(job, new Path(args[1]));
     System.exit(job.waitForCompletion(true) ? 0 : 1);
