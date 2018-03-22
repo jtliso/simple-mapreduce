@@ -13,6 +13,7 @@ These words and their counts can be seen in results/stopwords.txt.
 ### Usage:
 
 ```
+cd src
 hadoop fs -put ../txt/shakespeare.txt /input
 hadoop com.sun.tools.javac.Main WordCount.java 
 jar cf wc.jar WordCount*.class
