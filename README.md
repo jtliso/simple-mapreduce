@@ -1,6 +1,20 @@
 # Programming Assignment 2 UTK COSC 560
 ### J.T. Liso and Sean Whalen
 
+## Setup
+On Cloudlab setup is as follows:
+```
+export HADOOP_HOME=/usr/local/hadoop-2.7.3
+export JAVA_HOME=/usr/lib/jvm/java-1.8.0-openjdk-amd64
+export PATH=${JAVA_HOME}/bin:${HADOOP_HOME}/bin:${PATH}
+export HADOOP_CLASSPATH=<path-to-current-director>/tools.jar
+```
+
+Jar is not installed on CloudLab for whatever reason so you need to install fastjar.
+```
+sudo apt-get install fastjar
+```
+
 #
 ## Part 1: Identifying and removing stop words
 
@@ -16,6 +30,6 @@ These words and their counts can be seen in results/stopwords.txt.
 cd src
 hadoop fs -put ../txt/shakespeare.txt /input
 hadoop com.sun.tools.javac.Main WordCount.java 
-jar cf wc.jar WordCount*.class
+fastjar cf wc.jar WordCount*.class
 hadoop jar wc.jar WordCount /input /stopwords
 ```
