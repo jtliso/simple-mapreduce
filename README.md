@@ -31,5 +31,16 @@ cd src
 hadoop fs -put ../txt/shakespeare.txt /input
 hadoop com.sun.tools.javac.Main WordCount.java 
 fastjar cf wc.jar WordCount*.class
-hadoop jar wc.jar WordCount /input /stopwords
+sudo -s $HADOOP_HOME/bin/hadoop jar wc.jar WordCount /input /stopwords
+```
+
+#
+## Part 2: Creating the Inverted Index
+
+### Usage:
+
+```
+hadoop com.sun.tools.javac.Main InvertIndex.java 
+fastjar cf invert.jar InvertIndex*.class
+sudo -s $HADOOP_HOME/bin/hadoop jar invert.jar InvertIndex /input /inverted
 ```

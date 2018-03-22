@@ -116,7 +116,7 @@ public class InvertIndex {
   public static void main(String[] args) throws Exception {
     Configuration conf = new Configuration();
     Job job = Job.getInstance(conf, "invert index");
-    job.setJarByClass(WordCount.class);
+    job.setJarByClass(InvertIndex.class);
     job.setMapperClass(TokenizerMapper.class);
     job.setCombinerClass(IntSumReducer.class);
     job.setReducerClass(IntSumReducer.class);
