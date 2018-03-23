@@ -20,6 +20,7 @@ import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.FSDataInputStream;
+import org.apache.hadoop.mapreduce.lib.input.FileSplit;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -71,14 +72,15 @@ public class InvertIndex {
     
   }
 
-  public static class TokenizerMapper extends Mapper<Object, Text, Text, IntWritable>{
-    private final static IntWritable one = new IntWritable(1);
+  public static class TokenizerMapper extends Mapper<Object, Text, Text, Text>{
     private Text word = new Text();
+    private Text index = new Text();
     private StopWords stop = new StopWords();
 
     //function for mapping words
     public void map(Object key, Text value, Context context) throws IOException, InterruptedException {
-   
+      String fileName = ((FileSplit) context.getInputSplit()).getPath().getName();
+      int line_num = 0;
 
       StringTokenizer itr = new StringTokenizer(value.toString());
       while (itr.hasMoreTokens()) {
@@ -91,24 +93,25 @@ public class InvertIndex {
 	//skipping word if in stopword list
         if(!stop.in(sword)){
             word.set(sword);
-            context.write(word, one);
+	    index.set(fileName+":"+Integer.toString(line_num));
+            context.write(word, index);
         }
       }
     }
   }
 
-  public static class IntSumReducer extends Reducer<Text,IntWritable,Text,IntWritable> {
-    private IntWritable result = new IntWritable();
+  public static class InvertReducer extends Reducer<Text,Text,Text,Text> {
+    private Text result = new Text();
 
     //reducer function for combining the counts
-    public void reduce(Text key, Iterable<IntWritable> values, Context context) throws IOException, InterruptedException {
+    public void reduce(Text key, Iterable<Text> values, Context context) throws IOException, InterruptedException {
 
       //summing the counts of each word
-      int sum = 0;
+      String sum = "";
 
       //iterating through the mapped keys
-      for (IntWritable val : values) {
-        sum += val.get();
+      for (Text val : values) {
+        sum += val.toString()+",";
       }
 
       result.set(sum);
@@ -121,10 +124,10 @@ public class InvertIndex {
     Job job = Job.getInstance(conf, "invert index");
     job.setJarByClass(InvertIndex.class);
     job.setMapperClass(TokenizerMapper.class);
-    job.setCombinerClass(IntSumReducer.class);
-    job.setReducerClass(IntSumReducer.class);
+    job.setCombinerClass(InvertReducer.class);
+    job.setReducerClass(InvertReducer.class);
     job.setOutputKeyClass(Text.class);
-    job.setOutputValueClass(IntWritable.class);
+    job.setOutputValueClass(Text.class);
     job.setJar("invert.jar"); //jar file must be called invert.jar
 
     FileInputFormat.addInputPath(job, new Path(args[0]));
