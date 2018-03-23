@@ -32,6 +32,7 @@ public class InvertIndex {
   public static class StopWords {
     protected HashMap<String, Integer> stoplist;
 
+    // class to open the list of stop words generated in Part 1 and store them in a map
     public StopWords() { 
         stoplist = new HashMap<String, Integer>();
         BufferedReader br;
@@ -51,7 +52,6 @@ public class InvertIndex {
           return;
         }
        
-        //BufferedReader br = new BufferedReader(new FileReader("hdfs://localhost:9000/test/output2/part-r-00000"));
         String s;
         try{
           while ((s = br.readLine()) != null){
@@ -65,27 +65,35 @@ public class InvertIndex {
 
     }
 
+    //returns True or False of whether or not a word is a stop word
     public boolean in(String word){
       return stoplist.get(word) != null;
     }
 
-    
   }
 
+  //the map class for map reduce in hadoop
   public static class TokenizerMapper extends Mapper<Object, Text, Text, Text>{
     private Text word = new Text();
     private Text index = new Text();
     private StopWords stop = new StopWords();
 
-    //function for mapping words
+    //function for mapping words to document name and line number
     public void map(Object key, Text value, Context context) throws IOException, InterruptedException {
-      String fileName = ((FileSplit) context.getInputSplit()).getPath().getName();
+      boolean increment = false;
+      String fileName = ((FileSplit) context.getInputSplit()).getPath().getName(); //gets document name
       int line_num = 0;
 
       StringTokenizer itr = new StringTokenizer(value.toString());
       while (itr.hasMoreTokens()) {
         //getting the word and removing punctuation and lowercasing it
-        String sword = itr.nextToken().toString().replaceAll("\\s*\\p{Punct}+\\s*$", "").toLowerCase();
+        String sword = itr.nextToken().toString();
+
+	//checking if there is a new_line
+	if(sword.contains("\n"))
+	    increment = true;
+
+        sword = sword.replaceAll("\\s*\\p{Punct}+\\s*$", "").toLowerCase();
 
         //replace all non-ASCII characters
         sword = sword.replaceAll("[^\\x00-\\x7F]", "");
@@ -96,10 +104,17 @@ public class InvertIndex {
 	    index.set(fileName+":"+Integer.toString(line_num));
             context.write(word, index);
         }
+
+	//incrementing the line number if the word contained a new line
+	if(increment){
+	    line_num++;
+	    increment = false;
+	}
       }
     }
   }
 
+  //combines mapped document names and line numbers to a comma separated list per word
   public static class InvertReducer extends Reducer<Text,Text,Text,Text> {
     private Text result = new Text();
 
