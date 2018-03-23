@@ -38,8 +38,8 @@ public class InvertIndex {
         //load the stop word file
         try{
           Configuration config = new Configuration();
-          FileSystem fileSystem = FileSystem.get(new URI("hdfs://localhost:9000"), config);
-          Path filePath = new Path("hdfs://localhost:9000/stopwords/part-r-00000");
+          FileSystem fileSystem = FileSystem.get(new URI("hdfs://namenode:9000"), config);
+          Path filePath = new Path("hdfs://namenode:9000/stopwords/part-r-00000");
           FSDataInputStream fsDataInputStream = fileSystem.open(filePath);
           br = new BufferedReader(new InputStreamReader(fsDataInputStream));
         }catch(FileNotFoundException e){
