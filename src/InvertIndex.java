@@ -88,7 +88,8 @@ public class InvertIndex {
         //replace all non-ASCII characters
         sword = sword.replaceAll("[^\\x00-\\x7F]", "");
 
-        if(stop.in(sword)){
+	//skipping word if in stopword list
+        if(!stop.in(sword)){
             word.set(sword);
             context.write(word, one);
         }
@@ -109,7 +110,9 @@ public class InvertIndex {
       for (IntWritable val : values) {
         sum += val.get();
       }
+
       result.set(sum);
+      context.write(key, result);
     }
   }
 
