@@ -13,6 +13,7 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.Text;
+import org.apache.hadoop.io.*;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.hadoop.mapreduce.Reducer;
@@ -21,6 +22,8 @@ import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.mapreduce.lib.input.FileSplit;
+import org.apache.hadoop.mapred.TextInputFormat;
+import org.apache.hadoop.mapred.JobConf;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -28,7 +31,6 @@ import java.net.URISyntaxException;
 
 
 public class InvertIndex {
-
   public static class StopWords {
     protected HashMap<String, Integer> stoplist;
 
@@ -80,9 +82,9 @@ public class InvertIndex {
 
     //function for mapping words to document name and line number
     public void map(Object key, Text value, Context context) throws IOException, InterruptedException {
-      boolean increment = false;
+      boolean increment = true;
       String fileName = ((FileSplit) context.getInputSplit()).getPath().getName(); //gets document name
-      int line_num = 0;
+      int line_num = 1;
 
       StringTokenizer itr = new StringTokenizer(value.toString());
       while (itr.hasMoreTokens()) {
@@ -93,7 +95,7 @@ public class InvertIndex {
 	if(sword.contains("\n"))
 	    increment = true;
 
-        sword = sword.replaceAll("\\s*\\p{Punct}+\\s*$", "").toLowerCase();
+        sword = sword.replaceAll("\\s*\\p{Punct}+\\s*$", "").replaceAll("\'", "").replaceAll("\"", "").replaceAll("[()\\s-]+", "").toLowerCase();
 
         //replace all non-ASCII characters
         sword = sword.replaceAll("[^\\x00-\\x7F]", "");
