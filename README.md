@@ -28,7 +28,8 @@ These words and their counts can be seen in results/stopwords.txt.
 
 ```
 cd src
-sudo -s $HADOOP_HOME/bin/hadoop fs -put ../txt/shakespeare.txt /input
+sudo -s $HADOOP_HOME/bin/hadoop fs -put ../txt/shakespeare.txt /input/shakespeare
+sudo -s $HADOOP_HOME/bin/hadoop fs -put ../txt/frankenstein.txt /input/frankenstein
 hadoop com.sun.tools.javac.Main WordCount.java 
 fastjar cf wc.jar WordCount*.class
 sudo -s $HADOOP_HOME/bin/hadoop jar wc.jar WordCount /input /stopwords
