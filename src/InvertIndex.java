@@ -22,12 +22,11 @@ import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.mapreduce.lib.input.FileSplit;
-import org.apache.hadoop.mapred.TextInputFormat;
-import org.apache.hadoop.mapred.JobConf;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.URISyntaxException;
+import java.lang.NumberFormatException;
 
 
 public class InvertIndex {
@@ -35,7 +34,7 @@ public class InvertIndex {
     protected HashMap<String, Integer> stoplist;
 
     // class to open the list of stop words generated in Part 1 and store them in a map
-    public StopWords() { 
+    public StopWords() {
         stoplist = new HashMap<String, Integer>();
         BufferedReader br;
 
@@ -82,18 +81,34 @@ public class InvertIndex {
 
     //function for mapping words to document name and line number
     public void map(Object key, Text value, Context context) throws IOException, InterruptedException {
-      boolean increment = true;
+      boolean isFirst = true; 
       String fileName = ((FileSplit) context.getInputSplit()).getPath().getName(); //gets document name
       int line_num = 1;
+      String sword;
 
       StringTokenizer itr = new StringTokenizer(value.toString());
       while (itr.hasMoreTokens()) {
+
+        //getting the linenumber since it is the first element in the line
+        if(isFirst){ 
+	   sword = itr.nextToken().toString();
+           try{
+	
+	     line_num = Integer.parseInt(sword);
+           }catch(NumberFormatException e){ //somehow didn't read a number, skipping
+             sword = sword;
+           }
+
+	   isFirst = false;
+	   continue;
+	}
+
         //getting the word and removing punctuation and lowercasing it
-        String sword = itr.nextToken().toString();
+        sword = itr.nextToken().toString();
 
 	//checking if there is a new_line
 	if(sword.contains("\n"))
-	    increment = true;
+	    isFirst = true;
 
         sword = sword.replaceAll("\\s*\\p{Punct}+\\s*$", "").replaceAll("\'", "").replaceAll("\"", "").replaceAll("[()\\s-]+", "").toLowerCase();
 
@@ -107,11 +122,6 @@ public class InvertIndex {
             context.write(word, index);
         }
 
-	//incrementing the line number if the word contained a new line
-	if(increment){
-	    line_num++;
-	    increment = false;
-	}
       }
     }
   }
