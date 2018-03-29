@@ -8,6 +8,8 @@ import java.io.InputStreamReader;
 import java.util.Scanner;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.ArrayList;
+import java.util.Iterator;
 
 public class Query {
 
@@ -57,12 +59,41 @@ public class Query {
 		String query;
 		
 		while (console.hasNextLine()) {
+			HashMap<String, ArrayList<String>> map = new HashMap<String, ArrayList<String>>();
 			query = console.nextLine();
 			query = query.replaceAll("\n", "");
 			String res = null;
 			res = wordLocations.get(query);
+
 			if (res != null) {
-				System.out.println(res);
+				//System.out.println(res);
+				String [] lines = res.split(",");
+				for(String line : lines){
+					if(!line.contains(":"))
+						continue;					
+					String work = line.split(":")[0];
+					String linenum = line.split(":")[1];
+
+					//creating a new list if it is the first time we hit this file
+					if(!map.containsKey(work))
+						map.put(work, new ArrayList<String>());
+
+					//adding the line number to the file
+					map.get(work).add(linenum);
+				}
+
+				//printing everything in the hash map for that word
+				for(String w : map.keySet()){
+					ArrayList<String> linenums = map.get(w);
+
+					System.out.printf("%s: ", w);
+					
+					for(String line : linenums)
+						System.out.printf("%s, ", line);
+					
+					System.out.println();
+				}
+
 				System.out.println();
 			}
 		}
