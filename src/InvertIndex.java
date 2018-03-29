@@ -1,6 +1,7 @@
 //J.T. Liso and Sean Whalen
 //COSC 560 Programming Assignment 2
 
+import org.apache.commons.lang.StringUtils;
 import java.util.HashMap;
 import java.io.BufferedReader;
 import java.io.FileReader;
@@ -113,6 +114,10 @@ public class InvertIndex {
 
 				//replace all non-ASCII characters
 				sword = sword.replaceAll("[^\\x00-\\x7F]", "");
+
+				//skipping blank words
+				if(StringUtils.isBlank(sword))
+					continue;
 
 				//skipping word if in stopword list
 				if(!stop.in(sword)){
