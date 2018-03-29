@@ -15,6 +15,13 @@ Jar is not installed on CloudLab for whatever reason so you need to install fast
 sudo apt-get install fastjar
 ```
 
+### Preprocessing
+We need to append the line numbers to the files to do the inverted indexing.
+```
+python preprocess.py ../txt/shakespeare.txt
+python preprocess.py ../txt/frankenstein.txt
+```
+
 #
 ## Part 1: Identifying and removing stop words
 
