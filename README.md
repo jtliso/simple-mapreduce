@@ -52,3 +52,18 @@ hadoop com.sun.tools.javac.Main InvertIndex.java
 fastjar cf invert.jar InvertIndex*.class
 sudo -s $HADOOP_HOME/bin/hadoop jar invert.jar InvertIndex /input /inverted
 ```
+
+#
+## Part 3: Querying the Inverted Index
+First we need to copy the inverted index locally
+
+```
+hadoop fs -cat /inverted/part-r-00000 > ../results/inverted.txt
+```
+
+Then we can compile and run the query
+```
+hadoop com.sun.tools.javac.Main Query.java 
+java Query ../results/inverted.txt
+```
+
