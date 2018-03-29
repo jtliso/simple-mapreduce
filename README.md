@@ -27,7 +27,7 @@ python preprocess.py ../txt/frankenstein.txt
 
 For this part we updated the Java code for word count linked in the project writeup. We added word clean-up such as removing whitespace, removing beginning and trailing punctuation, and removing any characters that did not fit the ASCII space.
 
-In order to identify stop words, we added a check to the reducer to only add words that are above a certain threshold frequency. We began with a high frequency of 5000 and decreased the value until we added a word to the stop word list that was deemed meaningful. We noticed that if we dropped the threshold below 1000, we would lose an important word 'queen', so we decided to keep the stop word threshold frequency at 1000.
+In order to identify stop words, we added a check to the reducer to only add words that are above a certain threshold frequency. We began with a high frequency of 5000 and decreased the value until we added a word to the stop word list that was deemed meaningful. We noticed that if we dropped the threshold below 1100, we would lose an important word 'duke', so we decided to keep the stop word threshold frequency at 1100.
 
 These words and their counts can be seen in results/stopwords.txt.
 

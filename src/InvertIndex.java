@@ -30,135 +30,132 @@ import java.lang.NumberFormatException;
 
 
 public class InvertIndex {
-  public static class StopWords {
-    protected HashMap<String, Integer> stoplist;
+	public static class StopWords {
+		protected HashMap<String, Integer> stoplist;
 
-    // class to open the list of stop words generated in Part 1 and store them in a map
-    public StopWords() {
-        stoplist = new HashMap<String, Integer>();
-        BufferedReader br;
+		// class to open the list of stop words generated in Part 1 and store them in a map
+		public StopWords() {
+			stoplist = new HashMap<String, Integer>();
+			BufferedReader br;
 
-        //load the stop word file
-        try{
-          Configuration config = new Configuration();
-          FileSystem fileSystem = FileSystem.get(new URI("hdfs://namenode:9000"), config);
-          Path filePath = new Path("hdfs://namenode:9000/stopwords/part-r-00000");
-          FSDataInputStream fsDataInputStream = fileSystem.open(filePath);
-          br = new BufferedReader(new InputStreamReader(fsDataInputStream));
-        }catch(FileNotFoundException e){
-          return;
-        }catch(IOException e){
-          return;
-        }catch(URISyntaxException e){
-          return;
-        }
-       
-        String s;
-        try{
-          while ((s = br.readLine()) != null){
-              String word = s.split("\\s+")[0];
-              int count = Integer.parseInt(s.split("\\s+")[1]);
-              stoplist.put(word, count);
-          }
-        }catch(IOException e){
-          return;
-        }
+			//load the stop word file
+			try{
+				Configuration config = new Configuration();
+				FileSystem fileSystem = FileSystem.get(new URI("hdfs://namenode:9000"), config);
+				Path filePath = new Path("hdfs://namenode:9000/stopwords/part-r-00000"); //assuming instructions are followed and stopwords are saved here
+				FSDataInputStream fsDataInputStream = fileSystem.open(filePath);
+				br = new BufferedReader(new InputStreamReader(fsDataInputStream));
+			}catch(FileNotFoundException e){
+				return;
+			}catch(IOException e){
+				return;
+			}catch(URISyntaxException e){
+				return;
+			}
 
-    }
+			String s;
+			try{
+				while ((s = br.readLine()) != null){
+					String word = s.split("\\s+")[0];
+					int count = Integer.parseInt(s.split("\\s+")[1]);
+					stoplist.put(word, count);
+				}
+			}catch(IOException e){
+				return;
+			}
 
-    //returns True or False of whether or not a word is a stop word
-    public boolean in(String word){
-      return stoplist.get(word) != null;
-    }
+		}
 
-  }
-
-  //the map class for map reduce in hadoop
-  public static class TokenizerMapper extends Mapper<Object, Text, Text, Text>{
-    private Text word = new Text();
-    private Text index = new Text();
-    private StopWords stop = new StopWords();
-
-    //function for mapping words to document name and line number
-    public void map(Object key, Text value, Context context) throws IOException, InterruptedException {
-      boolean isFirst = true; 
-      String fileName = ((FileSplit) context.getInputSplit()).getPath().getName(); //gets document name
-      int line_num = 1;
-      String sword;
-
-      StringTokenizer itr = new StringTokenizer(value.toString());
-      while (itr.hasMoreTokens()) {
-
-        //getting the linenumber since it is the first element in the line
-        if(isFirst){ 
-	   sword = itr.nextToken().toString();
-           try{
-	
-	     line_num = Integer.parseInt(sword);
-           }catch(NumberFormatException e){ //somehow didn't read a number, skipping
-             sword = sword;
-           }
-
-	   isFirst = false;
-	   continue;
+		//returns True or False of whether or not a word is a stop word
+		public boolean in(String word){
+			return stoplist.get(word) != null;
+		}
 	}
 
-        //getting the word and removing punctuation and lowercasing it
-        sword = itr.nextToken().toString();
+	//the map class for map reduce in hadoop
+	public static class WordMapper extends Mapper<Object, Text, Text, Text>{
+		private Text word = new Text();
+		private Text index = new Text();
+		private StopWords stop = new StopWords();
 
-	//checking if there is a new_line
-	if(sword.contains("\n"))
-	    isFirst = true;
+		//function for mapping words to document name and line number
+		public void map(Object key, Text value, Context context) throws IOException, InterruptedException {
+			boolean isFirst = true; 
+			String fileName = ((FileSplit) context.getInputSplit()).getPath().getName(); //gets document name
+			int line_num = 1;
+			String sword;
 
-        sword = sword.replaceAll("\\s*\\p{Punct}+\\s*$", "").replaceAll("\'", "").replaceAll("\"", "").replaceAll("[()\\s-]+", "").toLowerCase();
+			StringTokenizer itr = new StringTokenizer(value.toString());
+			while (itr.hasMoreTokens()) {
 
-        //replace all non-ASCII characters
-        sword = sword.replaceAll("[^\\x00-\\x7F]", "");
+				//getting the linenumber since it is the first element in the line
+				if(isFirst){ 
+					sword = itr.nextToken().toString();
+					try{
 
-	//skipping word if in stopword list
-        if(!stop.in(sword)){
-            word.set(sword);
-	    index.set(fileName+":"+Integer.toString(line_num));
-            context.write(word, index);
-        }
+						line_num = Integer.parseInt(sword);
+					}catch(NumberFormatException e){ //somehow didn't read a number, skipping
+						sword = sword;
+					}
 
-      }
-    }
-  }
+					isFirst = false;
+					continue;
+				}
 
-  //combines mapped document names and line numbers to a comma separated list per word
-  public static class InvertReducer extends Reducer<Text,Text,Text,Text> {
-    private Text result = new Text();
+				//getting the word and removing punctuation and lowercasing it
+				sword = itr.nextToken().toString();
 
-    //reducer function for combining the counts
-    public void reduce(Text key, Iterable<Text> values, Context context) throws IOException, InterruptedException {
+				//checking if there is a new_line
+				if(sword.contains("\n"))
+					isFirst = true;
 
-      //summing the counts of each word
-      String sum = "";
+				sword = sword.replaceAll("\\s*\\p{Punct}+\\s*$", "").replaceAll("\'", "").replaceAll("\"", "").replaceAll("[()\\s-]+", "").toLowerCase();
 
-      //iterating through the mapped keys
-      for (Text val : values) {
-        sum += val.toString()+",";
-      }
+				//replace all non-ASCII characters
+				sword = sword.replaceAll("[^\\x00-\\x7F]", "");
 
-      result.set(sum);
-      context.write(key, result);
-    }
-  }
+				//skipping word if in stopword list
+				if(!stop.in(sword)){
+					word.set(sword);
+					index.set(fileName+":"+Integer.toString(line_num));
+					context.write(word, index);
+				}
+			}
+		}
+	}
 
-  public static void main(String[] args) throws Exception {
-    Configuration conf = new Configuration();
-    Job job = Job.getInstance(conf, "invert index");
-    job.setJarByClass(InvertIndex.class);
-    job.setMapperClass(TokenizerMapper.class);
-    job.setCombinerClass(InvertReducer.class);
-    job.setReducerClass(InvertReducer.class);
-    job.setOutputKeyClass(Text.class);
-    job.setOutputValueClass(Text.class);
-    job.setJar("invert.jar"); //jar file must be called invert.jar
+	//combines mapped document names and line numbers to a comma separated list per word
+	public static class InvertReducer extends Reducer<Text,Text,Text,Text> {
+		private Text result = new Text();
 
-    FileInputFormat.addInputPath(job, new Path(args[0]));
-    FileOutputFormat.setOutputPath(job, new Path(args[1]));
-    System.exit(job.waitForCompletion(true) ? 0 : 1);
-  }
+		//reducer function for combining the counts
+		public void reduce(Text key, Iterable<Text> values, Context context) throws IOException, InterruptedException {
+			//summing the counts of each word
+			String sum = "";
+
+			//iterating through the mapped keys
+			for (Text val : values) {
+				sum += val.toString()+",";
+			}
+
+			result.set(sum);
+			context.write(key, result);
+		}
+	}
+
+	public static void main(String[] args) throws Exception {
+		Configuration conf = new Configuration();
+		Job job = Job.getInstance(conf, "invert index");
+		job.setJarByClass(InvertIndex.class);
+		job.setMapperClass(WordMapper.class);
+		job.setCombinerClass(InvertReducer.class);
+		job.setReducerClass(InvertReducer.class);
+		job.setOutputKeyClass(Text.class);
+		job.setOutputValueClass(Text.class);
+		job.setJar("invert.jar"); //jar file must be called invert.jar
+
+		FileInputFormat.addInputPath(job, new Path(args[0]));
+		FileOutputFormat.setOutputPath(job, new Path(args[1]));
+		System.exit(job.waitForCompletion(true) ? 0 : 1);
+	}
 }
